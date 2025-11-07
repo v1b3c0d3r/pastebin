@@ -113,20 +113,31 @@ async function createPaste() {
     resultDiv.textContent = '';
     resultDiv.className = 'result';
     copyLinkButton.className = 'button-copy hidden';
-    const content = contentTextarea.value.trim();
-    if (!content) {
-        showResult('Please enter some text', 'error');
-        return;
+
+    let content = null;
+    let image = null;
+
+    const canvas = document.getElementById('pastedImage');
+    if (canvas) {
+        image = canvas.toDataURL();
+    } else {
+        content = contentTextarea.value.trim();
+        if (!content) {
+            showResult('Please enter some text or paste an image', 'error');
+            return;
+        }
+        if (content.length > characterLimit) {
+            showResult('Text exceeds 500 character limit', 'error');
+            return;
+        }
     }
-    if (content.length > characterLimit) {
-        showResult('Text exceeds 500 character limit', 'error');
-        return;
-    }
+
     submitButton.disabled = true;
     submitButton.textContent = 'Creating...';
     let hadFailed = false;
     try {
-        const response = await post('/api/paste', JSON.stringify({ text: content }), {'Content-Type': 'application/json',});
+        const payload = image ? { image } : { text: content };
+        const response = await post('/api/paste', JSON.stringify(payload), {'Content-Type': 'application/json',});
         const data = await response.json();
         if (response.ok) {
             const origin = window.location.origin;
@@ -134,6 +145,9 @@ async function createPaste() {
             const pasteUrl = `${origin}${pathname}paste/${data.id}`;
             showResult(pasteUrl, 'success url');
             copyLinkButton.classList.remove('hidden');
+            if (canvas) {
+                canvas.replaceWith(contentTextarea);
+            }
             contentTextarea.value = '';
             updateCharCount();
         } else {
@@ -238,7 +252,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (contentTextarea != null) {
         contentTextarea.addEventListener('input', updateCharCount);
+        contentTextarea.addEventListener('paste', handlePaste);
     }
     updateCharCount();
 });
 
+function handlePaste(e) {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (const item of items) {
+        if (item.type.indexOf('image') === 0) {
+            e.preventDefault();
+            const blob = item.getAsFile();
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const dataUrl = event.target.result;
+                const image = new Image();
+                image.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = image.width;
+                    canvas.height = image.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(image, 0, 0);
+                    canvas.id = 'pastedImage';
+                    contentTextarea.replaceWith(canvas);
+                    charCount.textContent = `Image dimensions: ${image.width}x${image.height}`;
+                };
+                image.src = dataUrl;
+            };
+            reader.readAsDataURL(blob);
+            return;
+        }
+    }
+}

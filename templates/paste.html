@@ -3,51 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Paste #{{ paste_id }}</title>
-    <link rel="stylesheet" href="../static/style.css">
+    <title>View Paste</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-
     <header class="header">
-        <h1 class="title">Pastebin</h1>
-        <p class="subtitle">Simple pastebin service</p>
+        <h1 class="title">View Paste</h1>
+        <p class="subtitle">Paste ID: {{ paste_id }}</p>
     </header>
-
-    <div id="pasteSection" class="container container-lg">
-        <main class="main">
-            <div class="paste-section">
-                <div class="paste-card">
-                    <div class="paste-header">
-                        <h2 class="paste-greeting">Paste ID: {{ paste_id }}</h2>
-                        <p class="paste-subtitle">Size: <span id="pasteSize">N/A</span></p>
-                    </div>
-                    <div class="paste-details">
-                        <div id="pasteContent" class="paste-content">Loading...</div>
-                    </div>
-                    <a href="/" class="back-link">← Create new paste</a>
-                </div>
-            </div>
-        </main>
-    </div>
-
-    <script src="../static/app.js"></script>
-    <script language="JavaScript">
-        async function loadPaste() {
+    <main class="container">
+        <div id="pasteContent" class="paste-content"></div>
+        <div class="paste-details">
+            <p>Size: <span id="pasteSize"></span> bytes</p>
+            <p>Created at: <span id="pasteDate"></span></p>
+        </div>
+        <a href="/" class="button button-primary">Create new paste</a>
+    </main>
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
             const pasteId = '{{ paste_id }}';
             try {
-                const response = await fetch(`../api/paste/${pasteId}`);
+                const response = await fetch(`/api/paste/${pasteId}`);
                 const data = await response.json();
+                const pasteContent = document.getElementById('pasteContent');
                 if (response.ok) {
-                    document.getElementById('pasteContent').textContent = data.text;
+                    if (data.image) {
+                        const img = document.createElement('img');
+                        img.src = data.image;
+                        pasteContent.appendChild(img);
+                    } else {
+                        const pre = document.createElement('pre');
+                        pre.textContent = data.text;
+                        pasteContent.appendChild(pre);
+                    }
                     document.getElementById('pasteSize').textContent = data.size;
+                    document.getElementById('pasteDate').textContent = new Date(data.created_at).toLocaleString();
                 } else {
-                    document.getElementById('pasteContent').textContent = `Error: ${data.error}`;
+                    pasteContent.textContent = `Error: ${data.error}`;
                 }
             } catch (error) {
-                document.getElementById('pasteContent').textContent = 'Error loading paste';
+                document.getElementById('pasteContent').textContent = 'Network error. Please try again.';
             }
-        }
-        loadPaste();
+        });
     </script>
 </body>
 </html>
