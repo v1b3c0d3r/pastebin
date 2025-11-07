@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Paste #{{ paste_id }}</title>
+    <link rel="stylesheet" href="../static/style.css">
+</head>
+<body>
+
+    <header class="header">
+        <h1 class="title">Pastebin</h1>
+        <p class="subtitle">Simple pastebin service</p>
+    </header>
+
+    <div id="pasteSection" class="container container-lg">
+        <main class="main">
+            <div class="paste-section">
+                <div class="paste-card">
+                    <div class="paste-header">
+                        <h2 class="paste-greeting">Paste ID: {{ paste_id }}</h2>
+                        <p class="paste-subtitle">Size: <span id="pasteSize">N/A</span></p>
+                    </div>
+                    <div class="paste-details">
+                        <div id="pasteContent" class="paste-content">Loading...</div>
+                    </div>
+                    <a href="/" class="back-link">← Create new paste</a>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="../static/app.js"></script>
+    <script language="JavaScript">
+        async function loadPaste() {
+            const pasteId = '{{ paste_id }}';
+            try {
+                const response = await fetch(`../api/paste/${pasteId}`);
+                const data = await response.json();
+                if (response.ok) {
+                    document.getElementById('pasteContent').textContent = data.text;
+                    document.getElementById('pasteSize').textContent = data.size;
+                } else {
+                    document.getElementById('pasteContent').textContent = `Error: ${data.error}`;
+                }
+            } catch (error) {
+                document.getElementById('pasteContent').textContent = 'Error loading paste';
+            }
+        }
+        loadPaste();
+    </script>
+</body>
+</html>

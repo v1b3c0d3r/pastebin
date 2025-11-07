@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pastebin</title>
+    <link rel="stylesheet" href="static/style.css">
+</head>
+<body>
+
+    <header class="header">
+        <h1 class="title">Pastebin</h1>
+        <p class="subtitle">Simple pastebin service</p>
+    </header>
+
+    <div id="authSection" class="container container-sm {{ 'hidden' if authenticated else '' }}">
+        <main class="main">
+            <div class="auth-section">
+
+                <div class="tabs">
+                    <button class="tab-button active" onclick="showTab('login')">Login</button>
+                    <button class="tab-button" onclick="showTab('register')">Register</button>
+                </div>
+
+                <div id="loginTab" class="tab-content active">
+                    <form id="loginForm" class="form">
+                        <div class="form-group">
+                            <label for="loginUsername" class="label">Username</label>
+                            <input type="text" id="loginUsername" class="input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="loginPassword" class="label">Password</label>
+                            <input type="password" id="loginPassword" class="input" required>
+                        </div>
+                        <button type="submit" class="button button-primary">Login</button>
+                    </form>
+                </div>
+
+                <div id="registerTab" class="tab-content">
+                    <form id="registerForm" class="form">
+                        <div class="form-group">
+                            <label for="registerUsername" class="label">Username</label>
+                            <input type="text" id="registerUsername" class="input" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="registerPassword" class="label">Password</label>
+                            <input type="password" id="registerPassword" class="input" required>
+                        </div>
+                        <button type="submit" class="button button-primary">Create Account</button>
+                    </form>
+                </div>
+
+            </div>
+            <div id="statusMessage" class="status-message hidden"></div>
+        </main>
+    </div>
+
+    <div id="pasteSection" class="container container-lg {{ 'hidden' if not authenticated else '' }}">
+        <main class="main">
+            <div class="paste-section">
+                <div class="paste-card">
+                    <div class="paste-header">
+                        <h2 class="paste-greeting">Welcome, <span id="userName">{{ username }}</span>! 👋</h2>
+                        <p class="paste-subtitle">Create your paste below (max 5000 characters)</p>
+                    </div>
+
+                    <div class="paste-details">
+                        <div class="form-group">
+                            <textarea id="content" placeholder="Enter your text here..."></textarea>
+                            <div id="charCount" class="char-count">0/5000 characters</div>
+                        </div>
+
+                        <div id="submissionStatus" class="result-item hidden">
+                            <div id="result" class="result"></div>
+                            <button id="copyLinkButton" class="button-copy hidden" onclick="copyLink()">Copy</button>
+                        </div>
+
+                        <div class="form-group last">
+                            <button id="submitButton" onclick="createPaste()" class="button button-primary button-narrow">Create Paste</button>
+                        </div>
+                    </div>
+
+                    <button onclick="logout()" class="button button-secondary button-narrow">Logout</button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="static/app.js"></script>
+</body>
+</html>
