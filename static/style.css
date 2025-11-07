@@ -348,6 +348,13 @@ body {
     line-height: 1.4;
 }
 
+img, canvas {
+    max-width: 100%;
+    max-height: 500px;
+    display: block;
+    margin: 0 auto;
+}
+
 .back-link {
     display: inline-block;
     margin-top: 20px;

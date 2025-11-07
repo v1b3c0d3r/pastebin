@@ -20,6 +20,7 @@
                     <div class="paste-header">
                         <h2 class="paste-greeting">Paste ID: {{ paste_id }}</h2>
                         <p class="paste-subtitle">Size: <span id="pasteSize">N/A</span></p>
+                        <p class="paste-subtitle">Created at: <span id="pasteDate">N/A</span></p>
                     </div>
                     <div class="paste-details">
                         <div id="pasteContent" class="paste-content">Loading...</div>
@@ -38,8 +39,20 @@
                 const response = await fetch(`../api/paste/${pasteId}`);
                 const data = await response.json();
                 if (response.ok) {
-                    document.getElementById('pasteContent').textContent = data.text;
+                    const pasteContent = document.getElementById('pasteContent');
+                    if (data.image) {
+                        pasteContent.textContent = '';
+                        const img = document.createElement('img');
+                        img.src = data.image;
+                        img.style = "cursor: pointer;";
+                        img.alt = "paste_{{ paste_id }}";
+                        img.addEventListener('click', (e) => downloadImage(e.target));
+                        pasteContent.appendChild(img);
+                    } else {
+                        pasteContent.textContent = data.text;
+                    }
                     document.getElementById('pasteSize').textContent = data.size;
+                    document.getElementById('pasteDate').textContent = new Date(data.created_at).toLocaleString();
                 } else {
                     document.getElementById('pasteContent').textContent = `Error: ${data.error}`;
                 }

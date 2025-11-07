@@ -113,20 +113,28 @@ async function createPaste() {
     resultDiv.textContent = '';
     resultDiv.className = 'result';
     copyLinkButton.className = 'button-copy hidden';
-    const content = contentTextarea.value.trim();
-    if (!content) {
-        showResult('Please enter some text', 'error');
-        return;
-    }
-    if (content.length > characterLimit) {
-        showResult('Text exceeds 500 character limit', 'error');
-        return;
+    let content = null;
+    let image = null;
+    const canvas = document.getElementById('pastedImage');
+    if (canvas) {
+        image = canvas.toDataURL();
+    } else {
+        content = contentTextarea.value.trim();
+        if (!content) {
+            showResult('Please enter some text or paste an image', 'error');
+            return;
+        }
+        if (content.length > characterLimit) {
+            showResult(`Text exceeds ${characterLimit} character limit`, 'error');
+            return;
+        }
     }
     submitButton.disabled = true;
     submitButton.textContent = 'Creating...';
     let hadFailed = false;
     try {
-        const response = await post('/api/paste', JSON.stringify({ text: content }), {'Content-Type': 'application/json',});
+        const payload = image ? { image } : { text: content };
+        const response = await post('/api/paste', JSON.stringify(payload), {'Content-Type': 'application/json',});
         const data = await response.json();
         if (response.ok) {
             const origin = window.location.origin;
@@ -134,6 +142,9 @@ async function createPaste() {
             const pasteUrl = `${origin}${pathname}paste/${data.id}`;
             showResult(pasteUrl, 'success url');
             copyLinkButton.classList.remove('hidden');
+            if (canvas) {
+                canvas.replaceWith(contentTextarea);
+            }
             contentTextarea.value = '';
             updateCharCount();
         } else {
@@ -218,8 +229,56 @@ function updateCharCount () {
     }
 }
 
+function handlePaste(e) {
+    const items = (e.clipboardData || e.originalEvent.clipboardData).items;
+    for (const item of items) {
+        if (item.type.indexOf('image') === 0) {
+            e.preventDefault();
+            const blob = item.getAsFile();
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const dataUrl = event.target.result;
+                const image = new Image();
+                image.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = image.width;
+                    canvas.height = image.height;
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(image, 0, 0);
+                    canvas.id = 'pastedImage';
+                    contentTextarea.replaceWith(canvas);
+                    charCount.textContent = `Image dimensions: ${image.width}x${image.height}`;
+                };
+                image.src = dataUrl;
+            };
+            reader.readAsDataURL(blob);
+            return;
+        }
+    }
+}
+
+function downloadImage(imageElement) {
+  const dataUri = imageElement.src;
+  if (!dataUri || !dataUri.startsWith('data:')) {
+    console.error('Image source is not a Data URI. Aborting download.');
+    return;
+  }
+  const link = document.createElement('a');
+  link.href = dataUri;
+  const mimeTypeMatch = dataUri.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9]+);/);
+  let extension = '.png';  // default to png
+  if (mimeTypeMatch && mimeTypeMatch[1]) {
+    extension = '.' + mimeTypeMatch[1].split('/')[1];
+  }
+  const filename = (imageElement.alt || 'image') + extension;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  console.log(`Downloaded ${filename}`);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    // Attach event listeners to forms
     const registerForm = document.getElementById('registerForm');
     if(registerForm) {
         registerForm.addEventListener('submit', (e) => {
@@ -227,7 +286,6 @@ document.addEventListener('DOMContentLoaded', () => {
             register();
         });
     }
-
     const loginForm = document.getElementById('loginForm');
     if(loginForm) {
         loginForm.addEventListener('submit', (e) => {
@@ -235,10 +293,11 @@ document.addEventListener('DOMContentLoaded', () => {
             authenticate();
         });
     }
-
     if (contentTextarea != null) {
         contentTextarea.addEventListener('input', updateCharCount);
+        contentTextarea.addEventListener('paste', handlePaste);
     }
     updateCharCount();
 });
+
 

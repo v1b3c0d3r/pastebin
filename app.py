@@ -15,7 +15,7 @@ TEXT_LENGTH_LIMIT = 5000
 
 app = Flask(__name__)
 CORS(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(DATABASE_PATH)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(os.path.join(os.getenv('DATA_DIR', '.'), DATABASE_PATH))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -149,24 +149,38 @@ def create_paste():
     if not user:
         return jsonify({'error': 'unauthorized'}), 401
     data = request.get_json()
-    if not data or 'text' not in data:
+    if not data:
         return jsonify({'error': 'content is required'}), 400
-    content = data['text'].strip()
-    if len(content) > TEXT_LENGTH_LIMIT:
-        return jsonify({'error': f'Content exceeds {TEXT_LENGTH_LIMIT} character limit'}), 400
-    if not content:
-        return jsonify({'error': 'content cannot be empty'}), 400
+    content = data.get('text', None)
+    image = data.get('image', None)
+    if isinstance(content, str):
+        content = content.strip()
+        if len(content) > TEXT_LENGTH_LIMIT:
+            return jsonify({'error': f'Content exceeds {TEXT_LENGTH_LIMIT} character limit'}), 400
+        if not content:
+            return jsonify({'error': 'text cannot be empty'}), 400
+    elif not image:
+        return jsonify({'error': 'text or image is required'}), 400
     paste_id = generate_id()
     while Paste.query.filter_by(id=paste_id).first():
         paste_id = generate_id()
-    paste = Paste(id=paste_id, text=content, size=len(content), user_id=user.id)
-    db.session.add(paste)
-    db.session.commit()
-    return jsonify({
-        'id': paste.id,
-        'text': content,
-        'url': f"paste/{paste_id}"
-    }), 201
+    if image:
+        paste = Paste(id=paste_id, image=image, size=len(image), user_id=user.id)
+        db.session.add(paste)
+        db.session.commit()
+        return jsonify({
+            'id': paste.id,
+            'url': f"paste/{paste_id}"
+        }), 201
+    else:
+        paste = Paste(id=paste_id, text=content, size=len(content), user_id=user.id)
+        db.session.add(paste)
+        db.session.commit()
+        return jsonify({
+            'id': paste.id,
+            'text': content,
+            'url': f"paste/{paste_id}"
+        }), 201
 
 
 @app.route('/api/paste/<paste_id>', methods=['GET'])
@@ -174,12 +188,16 @@ def get_paste(paste_id):
     paste = Paste.query.filter_by(id=paste_id).first()
     if not paste:
         return jsonify({'error': 'Paste not found'}), 404
-    return jsonify({
+    response_data = {
         'id': paste.id,
-        'text': paste.text,
         'size': paste.size,
         'created_at': paste.created_at
-    }), 200
+    }
+    if paste.image:
+        response_data['image'] = paste.image
+    else:
+        response_data['text'] = paste.text
+    return jsonify(response_data), 200
 
 
 if __name__ == '__main__':
