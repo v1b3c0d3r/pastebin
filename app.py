@@ -15,7 +15,7 @@ TEXT_LENGTH_LIMIT = 5000
 
 app = Flask(__name__)
 CORS(app)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(DATABASE_PATH)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///{}'.format(os.path.join(os.getenv('DATA_DIR', '.'), DATABASE_PATH))
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 
@@ -151,23 +151,19 @@ def create_paste():
     data = request.get_json()
     if not data:
         return jsonify({'error': 'content is required'}), 400
-
-    content = data.get('text')
-    image = data.get('image')
-
-    if content:
+    content = data.get('text', None)
+    image = data.get('image', None)
+    if isinstance(content, str):
         content = content.strip()
         if len(content) > TEXT_LENGTH_LIMIT:
             return jsonify({'error': f'Content exceeds {TEXT_LENGTH_LIMIT} character limit'}), 400
         if not content:
-            return jsonify({'error': 'content cannot be empty'}), 400
+            return jsonify({'error': 'text cannot be empty'}), 400
     elif not image:
-        return jsonify({'error': 'content or image is required'}), 400
-
+        return jsonify({'error': 'text or image is required'}), 400
     paste_id = generate_id()
     while Paste.query.filter_by(id=paste_id).first():
         paste_id = generate_id()
-
     if image:
         paste = Paste(id=paste_id, image=image, size=len(image), user_id=user.id)
         db.session.add(paste)
@@ -192,18 +188,15 @@ def get_paste(paste_id):
     paste = Paste.query.filter_by(id=paste_id).first()
     if not paste:
         return jsonify({'error': 'Paste not found'}), 404
-
     response_data = {
         'id': paste.id,
         'size': paste.size,
         'created_at': paste.created_at
     }
-
     if paste.image:
         response_data['image'] = paste.image
     else:
         response_data['text'] = paste.text
-
     return jsonify(response_data), 200
 
 

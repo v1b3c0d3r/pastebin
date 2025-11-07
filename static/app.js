@@ -113,10 +113,8 @@ async function createPaste() {
     resultDiv.textContent = '';
     resultDiv.className = 'result';
     copyLinkButton.className = 'button-copy hidden';
-
     let content = null;
     let image = null;
-
     const canvas = document.getElementById('pastedImage');
     if (canvas) {
         image = canvas.toDataURL();
@@ -127,11 +125,10 @@ async function createPaste() {
             return;
         }
         if (content.length > characterLimit) {
-            showResult('Text exceeds 500 character limit', 'error');
+            showResult(`Text exceeds ${characterLimit} character limit`, 'error');
             return;
         }
     }
-
     submitButton.disabled = true;
     submitButton.textContent = 'Creating...';
     let hadFailed = false;
@@ -232,31 +229,6 @@ function updateCharCount () {
     }
 }
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Attach event listeners to forms
-    const registerForm = document.getElementById('registerForm');
-    if(registerForm) {
-        registerForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            register();
-        });
-    }
-
-    const loginForm = document.getElementById('loginForm');
-    if(loginForm) {
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            authenticate();
-        });
-    }
-
-    if (contentTextarea != null) {
-        contentTextarea.addEventListener('input', updateCharCount);
-        contentTextarea.addEventListener('paste', handlePaste);
-    }
-    updateCharCount();
-});
-
 function handlePaste(e) {
     const items = (e.clipboardData || e.originalEvent.clipboardData).items;
     for (const item of items) {
@@ -284,3 +256,48 @@ function handlePaste(e) {
         }
     }
 }
+
+function downloadImage(imageElement) {
+  const dataUri = imageElement.src;
+  if (!dataUri || !dataUri.startsWith('data:')) {
+    console.error('Image source is not a Data URI. Aborting download.');
+    return;
+  }
+  const link = document.createElement('a');
+  link.href = dataUri;
+  const mimeTypeMatch = dataUri.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9]+);/);
+  let extension = '.png';  // default to png
+  if (mimeTypeMatch && mimeTypeMatch[1]) {
+    extension = '.' + mimeTypeMatch[1].split('/')[1];
+  }
+  const filename = (imageElement.alt || 'image') + extension;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  console.log(`Downloaded ${filename}`);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const registerForm = document.getElementById('registerForm');
+    if(registerForm) {
+        registerForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            register();
+        });
+    }
+    const loginForm = document.getElementById('loginForm');
+    if(loginForm) {
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            authenticate();
+        });
+    }
+    if (contentTextarea != null) {
+        contentTextarea.addEventListener('input', updateCharCount);
+        contentTextarea.addEventListener('paste', handlePaste);
+    }
+    updateCharCount();
+});
+
+

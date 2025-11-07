@@ -1,20 +1,13 @@
-# Use an official Python runtime as a parent image
 FROM python:3.11-slim
 
-# Set the working directory in the container
 WORKDIR /app
-
-# Copy the dependencies file to the working directory
 COPY requirements.txt .
-
-# Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the rest of the application's code
 COPY . .
 
-# Make port 5000 available to the world outside this container
+# must be absolute path to a directory inside container
+ENV DATA_DIR=/data
 EXPOSE 5000
-
-# Run app.py when the container launches
+VOLUME /data
 CMD ["python", "app.py"]
+
