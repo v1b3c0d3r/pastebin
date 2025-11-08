@@ -12,6 +12,7 @@ from typing import Optional
 DATABASE_PATH = 'pastebin.db'
 COOKIE_NAME = 'PBSESSION'
 TEXT_LENGTH_LIMIT = 5000
+PASTE_ID_LENGTH = 8
 
 app = Flask(__name__)
 CORS(app)
@@ -39,7 +40,7 @@ class Session(db.Model):
 
 
 class Paste(db.Model):
-    id = db.Column(db.String(8), primary_key=True)
+    id = db.Column(db.String(PASTE_ID_LENGTH), primary_key=True)
     text = db.Column(db.String, nullable=True)
     image = db.Column(db.String, nullable=True)
     size = db.Column(db.Integer, default=0, nullable=False)
@@ -48,7 +49,7 @@ class Paste(db.Model):
 
 
 def generate_id():
-    return str(uuid())[:8]
+    return str(uuid())[:PASTE_ID_LENGTH]
 
 
 @app.route('/')

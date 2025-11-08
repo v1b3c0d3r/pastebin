@@ -9,5 +9,6 @@ COPY . .
 ENV DATA_DIR=/data
 EXPOSE 5000
 VOLUME /data
-CMD ["python", "app.py"]
+STOPSIGNAL SIGTERM
 
+CMD ["python", "app.py"]
