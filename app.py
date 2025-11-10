@@ -120,7 +120,7 @@ def login():
     db.session.add(session)
     db.session.commit()
     response = jsonify({'username': username})
-    response.set_cookie(COOKIE_NAME, session_id, max_age=30*86400, httponly=True, secure=False, samesite='Strict')  #TODO secure=True
+    response.set_cookie(COOKIE_NAME, session_id, max_age=30*86400, httponly=True, secure=True, samesite='Strict')
     return response, 200
 
 
